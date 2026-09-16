@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.javad.emamicoin.data.local.SnapshotEntity
 import com.javad.emamicoin.domain.EmamiMarketAnalyzer
@@ -78,18 +77,10 @@ fun AnalysisScreen(state: UiState, history: List<SnapshotEntity>) {
             item { ReasonCard(analysis) }
         }
 
-        item {
-            PriceVsIntrinsicChart(points)
-        }
-        item {
-            PremiumChart(points)
-        }
-        item {
-            UsdChart(points)
-        }
-        item {
-            GoldChart(points)
-        }
+        item { PriceVsIntrinsicChart(points) }
+        item { PremiumChart(points) }
+        item { UsdChart(points) }
+        item { GoldChart(points) }
 
         item {
             Card(Modifier.fillMaxWidth()) {
@@ -147,7 +138,11 @@ private fun DecisionSignalCard(a: MarketAnalysis) {
             Text(a.explanationFa, style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = CircleShape, tonalElevation = 1.dp) {
-                    Text("اعتماد: ${a.confidenceFa}", Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        "اعتماد: ${a.confidenceFa}",
+                        Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
                 Text("۰ فروش/احتیاط  •  ۵۰ خنثی  •  ۱۰۰ خرید/حمایت", style = MaterialTheme.typography.labelSmall)
             }
@@ -331,13 +326,16 @@ private fun TrendChartCard(
                                 val y = bottom - chartHeight * normalized.toFloat()
                                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                             }
-                            drawPath(line.color, path, style = Stroke(width = 2.4.dp.toPx()))
+                            drawPath(path = path, color = line.color, style = Stroke(width = 2.4.dp.toPx()))
                             val lastValue = line.values.last()
                             val lastNormalized = ((lastValue - minY) / (maxY - minY)).coerceIn(0.0, 1.0)
                             drawCircle(
                                 color = line.color,
                                 radius = 3.8.dp.toPx(),
-                                center = androidx.compose.ui.geometry.Offset(right, bottom - chartHeight * lastNormalized.toFloat())
+                                center = androidx.compose.ui.geometry.Offset(
+                                    right,
+                                    bottom - chartHeight * lastNormalized.toFloat()
+                                )
                             )
                         }
                     }
@@ -351,10 +349,21 @@ private fun TrendChartCard(
 
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     visibleSeries.forEach { line ->
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(7.dp)
+                        ) {
                             Box(Modifier.size(9.dp).background(line.color, CircleShape))
-                            Text(line.label, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                            Text(line.formatter(line.values.last()), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                            Text(
+                                line.label,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                line.formatter(line.values.last()),
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
                 }
