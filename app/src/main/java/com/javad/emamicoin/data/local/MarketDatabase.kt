@@ -24,16 +24,19 @@ data class SnapshotEntity(
 interface SnapshotDao {
     @Insert suspend fun insert(snapshot: SnapshotEntity)
     @Query("SELECT * FROM snapshots ORDER BY capturedAt DESC LIMIT :limit")
-    fun recent(limit: Int = 50): Flow<List<SnapshotEntity>>
-    @Query("SELECT * FROM snapshots ORDER BY capturedAt DESC LIMIT 1") suspend fun latest(): SnapshotEntity?
+    fun recent(limit: Int = 120): Flow<List<SnapshotEntity>>
+    @Query("SELECT * FROM snapshots ORDER BY capturedAt DESC LIMIT 1")
+    suspend fun latest(): SnapshotEntity?
     @Query("DELETE FROM snapshots") suspend fun clear()
 }
 
 @Database(entities = [SnapshotEntity::class], version = 1, exportSchema = false)
 abstract class MarketDatabase : RoomDatabase() {
     abstract fun snapshots(): SnapshotDao
+
     companion object {
         @Volatile private var INSTANCE: MarketDatabase? = null
+
         fun get(context: Context): MarketDatabase = INSTANCE ?: synchronized(this) {
             INSTANCE ?: Room.databaseBuilder(
                 context.applicationContext,

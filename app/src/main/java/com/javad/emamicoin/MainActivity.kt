@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.javad.emamicoin
 
 import android.os.Bundle
@@ -9,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
@@ -47,19 +50,43 @@ private fun EmamiApp(vm: MainViewModel = viewModel()) {
             topBar = { TopAppBar(title = { Text("محاسبه‌گر سکه امامی", fontWeight = FontWeight.Bold) }) },
             bottomBar = {
                 NavigationBar {
-                    NavigationBarItem(selected = tab == 0, onClick = { tab = 0 }, icon = { Icon(Icons.Default.Home, null) }, label = { Text("محاسبه") })
-                    NavigationBarItem(selected = tab == 1, onClick = { tab = 1 }, icon = { Icon(Icons.Default.History, null) }, label = { Text("تاریخچه") })
+                    NavigationBarItem(
+                        selected = tab == 0,
+                        onClick = { tab = 0 },
+                        icon = { Icon(Icons.Default.Home, null) },
+                        label = { Text("محاسبه") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 1,
+                        onClick = { tab = 1 },
+                        icon = { Icon(Icons.Default.Analytics, null) },
+                        label = { Text("تحلیل") }
+                    )
+                    NavigationBarItem(
+                        selected = tab == 2,
+                        onClick = { tab = 2 },
+                        icon = { Icon(Icons.Default.History, null) },
+                        label = { Text("تاریخچه") }
+                    )
                 }
             }
         ) { padding ->
             Box(Modifier.padding(padding)) {
-                if (tab == 0) CalculatorScreen(state, vm) else HistoryScreen(history, vm::clearHistory)
+                when (tab) {
+                    0 -> CalculatorScreen(state, vm)
+                    1 -> AnalysisScreen(state, history)
+                    else -> HistoryScreen(history, vm::clearHistory)
+                }
             }
         }
     }
 
     state.message?.let { msg ->
-        AlertDialog(onDismissRequest = vm::dismissMessage, confirmButton = { TextButton(onClick = vm::dismissMessage) { Text("باشه") } }, text = { Text(msg) })
+        AlertDialog(
+            onDismissRequest = vm::dismissMessage,
+            confirmButton = { TextButton(onClick = vm::dismissMessage) { Text("باشه") } },
+            text = { Text(msg) }
+        )
     }
 }
 
@@ -71,9 +98,21 @@ private fun CalculatorScreen(state: UiState, vm: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
+            FilledTonalButton(
+                onClick = vm::refreshAll,
+                enabled = !state.loadingGold && !state.loadingIran,
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text(if (state.loadingGold || state.loadingIran) "در حال به‌روزرسانی…" else "به‌روزرسانی همه بازارها")
+            }
+        }
+        item {
             MarketInputCard(
-                title = "اونس جهانی طلا", value = state.goldText, suffix = "USD / oz",
-                source = state.goldSource, onChange = vm::setGold,
+                title = "اونس جهانی طلا",
+                value = state.goldText,
+                suffix = "USD / oz",
+                source = state.goldSource,
+                onChange = vm::setGold,
                 action = {
                     Button(onClick = vm::refreshGold, enabled = !state.loadingGold) {
                         Text(if (state.loadingGold) "در حال دریافت…" else "دریافت زنده")
@@ -83,20 +122,39 @@ private fun CalculatorScreen(state: UiState, vm: MainViewModel) {
         }
         item {
             MarketInputCard(
-                title = "دلار آزاد", value = state.usdTomanText, suffix = "تومان",
-                source = state.usdSource, onChange = vm::setUsdToman,
-                action = { Button(onClick = vm::refreshIran, enabled = !state.loadingIran) { Text(if (state.loadingIran) "در حال دریافت…" else "دریافت TGJU") } }
+                title = "دلار آزاد",
+                value = state.usdTomanText,
+                suffix = "تومان",
+                source = state.usdSource,
+                onChange = vm::setUsdToman,
+                action = {
+                    Button(onClick = vm::refreshIran, enabled = !state.loadingIran) {
+                        Text(if (state.loadingIran) "در حال دریافت…" else "دریافت TGJU")
+                    }
+                }
             )
         }
         item {
             MarketInputCard(
-                title = "قیمت سکه امامی", value = state.coinTomanText, suffix = "تومان",
-                source = state.coinSource, onChange = vm::setCoinToman
+                title = "قیمت سکه امامی",
+                value = state.coinTomanText,
+                suffix = "تومان",
+                source = state.coinSource,
+                onChange = vm::setCoinToman
             )
         }
         item {
             state.result?.let { r ->
-                ResultCard(r.theoreticalValueIrr / 10, r.premiumIrr / 10, r.premiumPercent, r.impliedUsdIrr / 10, r.impliedUsdDifferenceIrr / 10, r.impliedUsdDifferencePercent, state.reportedPremiumIrr?.div(10.0), state.premiumSource)
+                ResultCard(
+                    r.theoreticalValueIrr / 10,
+                    r.premiumIrr / 10,
+                    r.premiumPercent,
+                    r.impliedUsdIrr / 10,
+                    r.impliedUsdDifferenceIrr / 10,
+                    r.impliedUsdDifferencePercent,
+                    state.reportedPremiumIrr?.div(10.0),
+                    state.premiumSource
+                )
             } ?: Card(Modifier.fillMaxWidth()) {
                 Text("برای محاسبه، نرخ دلار و قیمت سکه را وارد کنید.", Modifier.padding(18.dp))
             }
@@ -106,25 +164,42 @@ private fun CalculatorScreen(state: UiState, vm: MainViewModel) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 enabled = state.result != null,
                 onClick = vm::saveSnapshot
-            ) { Text("ذخیره نتیجه") }
+            ) { Text("ذخیره نتیجه برای نمودارها") }
         }
         item {
-            Text("مبنای محاسبه: وزن ۸٫۱۳۳ گرم، عیار ۹۰۰، و هر اونس تروا ۳۱٫۱۰۳۴۷۶۸ گرم. تمام محاسبات داخلی با ریال انجام می‌شود و نمایش به تومان تبدیل می‌شود.", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "مبنای محاسبه: وزن ۸٫۱۳۳ گرم، عیار ۹۰۰، و هر اونس تروا ۳۱٫۱۰۳۴۷۶۸ گرم. تمام محاسبات داخلی با ریال انجام می‌شود و نمایش به تومان تبدیل می‌شود.",
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
 
 @Composable
-private fun MarketInputCard(title: String, value: String, suffix: String, source: String, onChange: (String) -> Unit, action: (@Composable () -> Unit)? = null) {
+private fun MarketInputCard(
+    title: String,
+    value: String,
+    suffix: String,
+    source: String,
+    onChange: (String) -> Unit,
+    action: (@Composable () -> Unit)? = null
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(title, fontWeight = FontWeight.SemiBold)
                 Text("منبع: $source", style = MaterialTheme.typography.labelSmall)
             }
             OutlinedTextField(
-                value = value, onValueChange = onChange, modifier = Modifier.fillMaxWidth(),
-                singleLine = true, suffix = { Text(suffix) },
+                value = value,
+                onValueChange = onChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                suffix = { Text(suffix) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
             action?.invoke()
@@ -133,7 +208,16 @@ private fun MarketInputCard(title: String, value: String, suffix: String, source
 }
 
 @Composable
-private fun ResultCard(theoreticalToman: Double, premiumToman: Double, premiumPercent: Double, impliedUsdToman: Double, usdDiffToman: Double, usdDiffPercent: Double, reportedPremiumToman: Double?, reportedPremiumSource: String) {
+private fun ResultCard(
+    theoreticalToman: Double,
+    premiumToman: Double,
+    premiumPercent: Double,
+    impliedUsdToman: Double,
+    usdDiffToman: Double,
+    usdDiffPercent: Double,
+    reportedPremiumToman: Double?,
+    reportedPremiumSource: String
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("نتیجه", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -151,7 +235,8 @@ private fun ResultCard(theoreticalToman: Double, premiumToman: Double, premiumPe
     }
 }
 
-@Composable private fun Metric(label: String, value: String) {
+@Composable
+private fun Metric(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label)
         Text(value, fontWeight = FontWeight.Bold)
@@ -161,14 +246,23 @@ private fun ResultCard(theoreticalToman: Double, premiumToman: Double, premiumPe
 @Composable
 private fun HistoryScreen(history: List<SnapshotEntity>, clear: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("تاریخچه محاسبات", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             TextButton(onClick = clear, enabled = history.isNotEmpty()) { Text("پاک کردن") }
         }
         if (history.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("هنوز نتیجه‌ای ذخیره نشده است.") }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("هنوز نتیجه‌ای ذخیره نشده است.")
+            }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
                 items(history, key = { it.id }) { s ->
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
